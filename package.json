@@ -1,0 +1,35 @@
+{
+  "name": "metl",
+  "version": "0.1.0",
+  "description": "Model Extract Transform Load -- Logic Code Analysis and Generation using Claude Agent SDK",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "alloy",
+    "tla+",
+    "formal-methods",
+    "model-checking",
+    "agent",
+    "claude"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.1.0",
+    "alloy-lang": "^6.2.0-17"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
