@@ -1,0 +1,26 @@
+{
+  "name": "game-of-life-example",
+  "version": "1.0.0",
+  "description": "Conway's Game of Life - Example for METL model extraction",
+  "type": "module",
+  "main": "dist/game.js",
+  "bin": {
+    "game-of-life": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "npm run build && node dist/test/game.test.js",
+    "cli": "node dist/src/cli.js"
+  },
+  "keywords": [
+    "game-of-life",
+    "cellular-automata",
+    "simulation"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}

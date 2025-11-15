@@ -184,22 +184,50 @@ Start by exploring the codebase structure and identifying the main application d
         maxTurns: 20,
         cwd: options.codebasePath,
         env: { ...process.env, ANTHROPIC_API_KEY: apiKey },
+        // Grant write access to output directory
+        additionalDirectories: [options.dir!],
+        permissionMode: 'acceptEdits',
       },
     });
 
     let resultText = '';
+    let messageCount = 0;
     for await (const message of queryStream) {
-      if (message.type === 'assistant' && message.message.content) {
+      messageCount++;
+
+      if (message.type === 'system' && message.subtype === 'init') {
+        console.log(`📋 Session initialized (ID: ${message.session_id})`);
+        console.log(`   Model: ${message.model}`);
+        console.log(`   Tools: ${message.tools.length} available`);
+        console.log(`   MCP Servers: ${message.mcp_servers.map(s => `${s.name} (${s.status})`).join(', ')}\n`);
+      } else if (message.type === 'user') {
+        console.log(`\n👤 [User message ${messageCount}]`);
+      } else if (message.type === 'assistant' && message.message.content) {
+        console.log(`\n🤖 [Assistant response ${messageCount}]`);
         for (const block of message.message.content) {
           if (block.type === 'text') {
             process.stdout.write(block.text);
             resultText += block.text;
+          } else if (block.type === 'tool_use') {
+            console.log(`\n🔧 [Tool: ${block.name}]`);
+            console.log(`   Input: ${JSON.stringify(block.input).substring(0, 100)}...`);
           }
         }
+        console.log(); // newline after assistant response
       } else if (message.type === 'result') {
+        console.log(`\n✅ [Execution complete]`);
+        console.log(`   Duration: ${message.duration_ms}ms`);
+        console.log(`   Turns: ${message.num_turns}`);
+        console.log(`   Cost: $${message.total_cost_usd.toFixed(4)}`);
         if ('result' in message) {
           resultText += message.result;
+          console.log(`   Result: ${message.result.substring(0, 100)}...`);
         }
+        if ('errors' in message && message.errors) {
+          console.error(`   ⚠️  Errors: ${message.errors.join(', ')}`);
+        }
+      } else if (message.type === 'tool_progress') {
+        console.log(`⏳ [Tool ${message.tool_name} in progress... ${message.elapsed_time_seconds}s]`);
       }
     }
 
@@ -307,22 +335,50 @@ Start by analyzing the first model and generating scenarios.
         maxTurns: 30,
         cwd: options.codebasePath,
         env: { ...process.env, ANTHROPIC_API_KEY: apiKey },
+        // Grant write access to output directory
+        additionalDirectories: [options.dir!],
+        permissionMode: 'acceptEdits',
       },
     });
 
     let resultText = '';
+    let messageCount = 0;
     for await (const message of queryStream) {
-      if (message.type === 'assistant' && message.message.content) {
+      messageCount++;
+
+      if (message.type === 'system' && message.subtype === 'init') {
+        console.log(`📋 Session initialized (ID: ${message.session_id})`);
+        console.log(`   Model: ${message.model}`);
+        console.log(`   Tools: ${message.tools.length} available`);
+        console.log(`   MCP Servers: ${message.mcp_servers.map(s => `${s.name} (${s.status})`).join(', ')}\n`);
+      } else if (message.type === 'user') {
+        console.log(`\n👤 [User message ${messageCount}]`);
+      } else if (message.type === 'assistant' && message.message.content) {
+        console.log(`\n🤖 [Assistant response ${messageCount}]`);
         for (const block of message.message.content) {
           if (block.type === 'text') {
             process.stdout.write(block.text);
             resultText += block.text;
+          } else if (block.type === 'tool_use') {
+            console.log(`\n🔧 [Tool: ${block.name}]`);
+            console.log(`   Input: ${JSON.stringify(block.input).substring(0, 100)}...`);
           }
         }
+        console.log(); // newline after assistant response
       } else if (message.type === 'result') {
+        console.log(`\n✅ [Execution complete]`);
+        console.log(`   Duration: ${message.duration_ms}ms`);
+        console.log(`   Turns: ${message.num_turns}`);
+        console.log(`   Cost: $${message.total_cost_usd.toFixed(4)}`);
         if ('result' in message) {
           resultText += message.result;
+          console.log(`   Result: ${message.result.substring(0, 100)}...`);
         }
+        if ('errors' in message && message.errors) {
+          console.error(`   ⚠️  Errors: ${message.errors.join(', ')}`);
+        }
+      } else if (message.type === 'tool_progress') {
+        console.log(`⏳ [Tool ${message.tool_name} in progress... ${message.elapsed_time_seconds}s]`);
       }
     }
 
