@@ -119,7 +119,7 @@ Start by exploring the codebase structure and identifying the main application d
         mcpServers: { metl: mcpServer },
         maxTurns: 20,
         cwd: options.codebasePath,
-        env: { ANTHROPIC_API_KEY: apiKey },
+        env: { ...process.env, ANTHROPIC_API_KEY: apiKey },
       },
     });
 
@@ -235,7 +235,7 @@ Start by analyzing the first model and generating scenarios.
         mcpServers: { metl: mcpServer },
         maxTurns: 30,
         cwd: options.codebasePath,
-        env: { ANTHROPIC_API_KEY: apiKey },
+        env: { ...process.env, ANTHROPIC_API_KEY: apiKey },
       },
     });
 
