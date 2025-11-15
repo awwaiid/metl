@@ -3,10 +3,12 @@
  * METL CLI - Command line interface for Model Extract Transform Load
  */
 
-import { query } from '@anthropic-ai/claude-agent-sdk';
+import { query, type SDKUserMessage } from '@anthropic-ai/claude-agent-sdk';
+import type { MessageParam } from '@anthropic-ai/sdk/resources';
 import { createMetlMcpServer } from './agent.js';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as readline from 'readline';
 
 interface CliOptions {
   command: 'extract' | 'explore' | 'help';
@@ -60,6 +62,61 @@ Examples:
 `);
 }
 
+/**
+ * Creates an async generator for streaming mode that yields user messages
+ * This allows for interactive conversation with the agent
+ */
+async function* createMessageStream(
+  initialPrompt: string,
+  sessionId: string,
+  enableInteractive: boolean = false
+): AsyncGenerator<SDKUserMessage> {
+  // Yield the initial prompt
+  yield {
+    type: 'user',
+    message: {
+      role: 'user',
+      content: initialPrompt,
+    } as MessageParam,
+    parent_tool_use_id: null,
+    session_id: sessionId,
+  };
+
+  // If interactive mode is enabled, allow for additional messages
+  if (enableInteractive) {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+
+    try {
+      while (true) {
+        const line = await new Promise<string>((resolve) => {
+          rl.question('\n💬 Your message (or "exit" to finish): ', resolve);
+        });
+
+        if (line.toLowerCase() === 'exit' || line.toLowerCase() === 'quit') {
+          break;
+        }
+
+        if (line.trim()) {
+          yield {
+            type: 'user',
+            message: {
+              role: 'user',
+              content: line,
+            } as MessageParam,
+            parent_tool_use_id: null,
+            session_id: sessionId,
+          };
+        }
+      }
+    } finally {
+      rl.close();
+    }
+  }
+}
+
 async function ensureApiKey(): Promise<string> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -86,6 +143,9 @@ async function extract(options: CliOptions) {
   // Create MCP server with METL tools
   const mcpServer = createMetlMcpServer();
 
+  // Generate a unique session ID
+  const sessionId = `metl-extract-${Date.now()}`;
+
   // Prepare the extraction prompt
   const extractPrompt = `
 You are analyzing a codebase to extract formal models using Alloy.
@@ -110,10 +170,14 @@ Start by exploring the codebase structure and identifying the main application d
 `;
 
   try {
-    console.log('🤖 Starting Claude agent for model extraction...\n');
+    console.log('🤖 Starting Claude agent in streaming mode...');
+    console.log('📡 You can interact with Claude during the extraction\n');
+
+    // Create message stream for interactive mode
+    const messageStream = createMessageStream(extractPrompt, sessionId, false);
 
     const queryStream = query({
-      prompt: extractPrompt,
+      prompt: messageStream,
       options: {
         model: 'claude-sonnet-4-5-20250929',
         mcpServers: { metl: mcpServer },
@@ -196,6 +260,9 @@ async function explore(options: CliOptions) {
     return { name: file, content };
   });
 
+  // Generate a unique session ID
+  const sessionId = `metl-explore-${Date.now()}`;
+
   // Prepare the exploration prompt
   const explorePrompt = `
 You are exploring and validating Alloy formal models to discover edge cases and generate test scenarios.
@@ -226,10 +293,14 @@ Start by analyzing the first model and generating scenarios.
 `;
 
   try {
-    console.log('🤖 Starting Claude agent for model exploration...\n');
+    console.log('🤖 Starting Claude agent in streaming mode...');
+    console.log('📡 You can interact with Claude during the exploration\n');
+
+    // Create message stream for interactive mode
+    const messageStream = createMessageStream(explorePrompt, sessionId, false);
 
     const queryStream = query({
-      prompt: explorePrompt,
+      prompt: messageStream,
       options: {
         model: 'claude-sonnet-4-5-20250929',
         mcpServers: { metl: mcpServer },

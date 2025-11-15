@@ -26,6 +26,7 @@
   "license": "MIT",
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.1.0",
+    "@anthropic-ai/sdk": "^0.69.0",
     "alloy-lang": "^6.2.0-17"
   },
   "devDependencies": {
