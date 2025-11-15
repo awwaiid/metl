@@ -4,9 +4,13 @@
   "description": "Model Extract Transform Load -- Logic Code Analysis and Generation using Claude Agent SDK",
   "main": "dist/index.js",
   "type": "module",
+  "bin": {
+    "metl": "./dist/cli.js"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/index.ts",
+    "cli": "tsx src/cli.ts",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit"
   },
