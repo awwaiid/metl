@@ -4,20 +4,23 @@
 
 import { tool } from '@anthropic-ai/claude-agent-sdk';
 import { z } from 'zod';
+import * as fs from 'fs';
+import * as path from 'path';
 
 /**
  * Tool to create an Alloy model from code concepts
  */
 export const createAlloyModel = tool(
   'create_alloy_model',
-  'Create an Alloy formal model based on identified code concepts and interactions',
+  'Create an Alloy formal model based on identified code concepts and interactions. The model will be automatically saved to a .als file in the current working directory or specified output directory.',
   {
     modelName: z.string().describe('Name of the Alloy model'),
     concepts: z.array(z.string()).describe('List of core concepts to model'),
     relationships: z.array(z.string()).describe('Key relationships between concepts'),
     constraints: z.array(z.string()).describe('Constraints and invariants to enforce'),
+    outputDir: z.string().optional().describe('Optional output directory (defaults to current directory)'),
   },
-  async (args) => {
+  async (args, context) => {
     // Build the Alloy model structure
     const alloyModel = buildAlloyModel(
       args.modelName,
@@ -26,14 +29,30 @@ export const createAlloyModel = tool(
       args.constraints
     );
 
+    // Determine output directory - use provided dir, or context cwd, or current process cwd
+    const outputDir = args.outputDir || (context as any).cwd || process.cwd();
+
+    // Ensure output directory exists
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+
+    // Create filename from model name
+    const filename = `${args.modelName.replace(/\s+/g, '_').toLowerCase()}.als`;
+    const filepath = path.join(outputDir, filename);
+
+    // Write the model to file
+    fs.writeFileSync(filepath, alloyModel, 'utf-8');
+
     return {
       content: [{
         type: 'text' as const,
         text: JSON.stringify({
           success: true,
           modelName: args.modelName,
+          filepath,
           model: alloyModel,
-          message: `Created Alloy model '${args.modelName}' with ${args.concepts.length} concepts`,
+          message: `Created Alloy model '${args.modelName}' with ${args.concepts.length} concepts and saved to ${filepath}`,
         }, null, 2),
       }],
     };
